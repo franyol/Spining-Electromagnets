@@ -8,9 +8,14 @@ e-mail: f.valbuenao64@gmail.com
 
 # Standard library imports
 import math
+from re import U
 
 # Third party imports
 import numpy as np
+import matplotlib as plt
+
+import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
 
 # =============================================================================
 
@@ -116,13 +121,21 @@ class Cable:
     """!
     Here you save the head and tai of the vectors that point to the
     cable in R3, also the magnitude of the current which is pointing
-    in the head - tail direction, if negative, points backwards.
+    in the head - tail vector direction, if negative, points backwards.
     """
     
     def __init__(self, head: Vector, tail: Vector, current: float):
 
         self.head = head
         self.tail = tail
+        self.current = current
+
+    def set_current(self, current: float):
+        """!
+        change the the magnitude of the current which is pointing
+        in the head - tail vector direction, if negative, points backwards.
+        """
+
         self.current = current
 
     def move(self, move: Vector):
@@ -159,14 +172,9 @@ class Cable:
         @param axis RotationAxis
         """
 
-        cable_centre = self.head + self.tail
-        cable_centre = cable_centre.scalar_mul(1/2)
-
         # p is the closest point of the axis to the cable centre
-        p = axis.Ae + axis.Ve.scalar_mul(axis.Ve.dot(cable_centre - axis.Ae))
-
-        d = cable_centre - p
-
+        p = axis.Ae + axis.Ve.scalar_mul(axis.Ve.dot(self.head - axis.Ae))
+        d = self.head - p
         dir1 = p - self.head
         dir1 = dir1.unit()
         dir2 = axis.Ve.cross(dir1.scalar_mul(-1))
@@ -174,9 +182,75 @@ class Cable:
         self.head += dir1.scalar_mul(math.cos(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle)))) 
         self.head += dir2.scalar_mul(math.sin(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle))))
 
+        p = axis.Ae + axis.Ve.scalar_mul(axis.Ve.dot(self.tail - axis.Ae))
+        d = self.tail - p
         dir1 = p - self.tail
         dir1 = dir1.unit()
         dir2 = axis.Ve.cross(dir1.scalar_mul(-1))
         dir2 = dir2.unit()
         self.tail += dir1.scalar_mul(math.cos(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle))))
         self.tail += dir2.scalar_mul(math.sin(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle))))
+
+class Coil:
+    """!
+    It saves a list of cables connected forming any shape
+    """
+    
+    def __init__(self, cables: list):
+
+        self.cables = cables
+
+    def set_current(self, current: float):
+        """!
+        The same current is set for every Cable
+        """
+
+        for cable in self.cables:
+            cable.set_current(current)
+
+    def plot(self):
+
+        x = []
+        y = []
+        z = []
+        u = []
+        v = []
+        w = []
+
+        for cable in self.cables:
+
+            if(cable.current > 0):
+                x.append(cable.tail.i)
+                y.append(cable.tail.j)
+                z.append(cable.tail.k)
+                temp = cable.head - cable.tail
+                temp = temp.unit()
+                u.append(cable.head.i - cable.tail.i)
+                v.append(cable.head.j - cable.tail.j)
+                w.append(cable.head.k - cable.tail.k)
+            
+            else:
+                u.append(cable.tail.i - cable.head.i)
+                v.append(cable.tail.j - cable.head.j)
+                w.append(cable.tail.k - cable.head.k)
+                x.append(cable.head.i)
+                y.append(cable.head.j)
+                z.append(cable.head.k)
+
+        fig = plt.figure()
+
+        ax = fig.add_subplot(111, projection='3d')
+
+        ax.quiver(x, y, z, u, v, w)
+        ax.set_zlim3d(-7, 7)                    # viewrange for z-axis should be [-4,4] 
+        ax.set_ylim3d(-7, 7)                    # viewrange for y-axis should be [-2,2] 
+        ax.set_xlim3d(-7, 7)                    # viewrange for x-axis should be [-2,2]
+
+        plt.show()
+
+    def rotate(self, angle: float, axis: RotationAxis):
+
+        for cable in self.cables:
+            cable.rotate(angle, axis)
+
+
