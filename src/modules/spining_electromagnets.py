@@ -171,6 +171,8 @@ class Cable:
         @param angle float of the rotation angle in radians
         @param axis RotationAxis
         """
+        if(angle < 0):
+            angle = 2*math.pi + angle
 
         # p is the closest point of the axis to the cable centre
         p = axis.Ae + axis.Ve.scalar_mul(axis.Ve.dot(self.head - axis.Ae))

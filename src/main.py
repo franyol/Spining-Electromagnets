@@ -14,6 +14,7 @@ x = sp.Vector(0, 0, 0)
 y = sp.Vector(0, 0, 1)
 
 cl = []
+ho = sp.Cable(a, b, 1)
 cl.append(sp.Cable(a, b, 1)) 
 cl.append(sp.Cable(b, c, 1))
 
@@ -22,6 +23,7 @@ cc = sp.Coil(cl)
 ax = sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(0, 0, 1))
 
 """
+
 print(ho.head)
 print(ho.tail)
 print(ho.head - ho.tail)
@@ -29,7 +31,7 @@ print(abs(ho.head - ho.tail))
 
 print("")
 
-ho.rotate(3.1416/5, ax)
+ho.rotate(-3.1416/2, ax)
 
 print(ho.head)
 print(ho.tail)
@@ -41,7 +43,7 @@ print("")
 
 cc.plot()
 
-cc.rotate(-3.1416/2, ax)
+cc.rotate(-3.1416*3/2, ax)
 
 plt.figure
 
