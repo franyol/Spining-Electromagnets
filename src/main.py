@@ -41,13 +41,11 @@ print("")
 """
 
 
-cc.plot()
+circulo = sp.coil_gen_circle(1, 100)
+circulo.plot()
 
-cc.rotate(-3.1416*3/2, ax)
-
-plt.figure
-
-cc.plot()
+circulo.rotate(3.1416/4, sp.RotationAxis(sp.Vector(1, 0, 0), sp.Vector(0, 1, 0)))
+circulo.plot()
 
 
 # plt.savefig('books_read.png')
