@@ -41,7 +41,7 @@ print("")
 """
 
 
-circulo = sp.coil_gen_circle(1, 100)
+circulo = sp.coil_gen_circle(1, 20)
 circulo.plot()
 
 circulo.rotate(3.1416/4, sp.RotationAxis(sp.Vector(1, 0, 0), sp.Vector(0, 1, 0)))
