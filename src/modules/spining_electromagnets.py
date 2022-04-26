@@ -104,6 +104,21 @@ class Vector:
 
       return response
 
+def sphericalVector(radius: float, ang_ij: float, ang_rk: float) -> Vector:
+    """! Generates a Vector using spherical coordinates
+    
+    @param radius float
+    @param ang_ij float angle in the ij plane in radians 0 is the i axis
+    @param ang_rk float angle in the rk plane in radians 0 is the r axis
+                  r axis is the one formated in the ij plane
+    @return Vector generated
+    """
+    response = Vector()
+    response.k = radius*math.sin(ang_rk)
+    response.i = radius*math.cos(ang_rk)*math.cos(ang_ij)
+    response.j = radius*math.sin(ang_ij)*math.cos(ang_rk)
+    return response
+
 class RotationAxis:
     """!
     The rotation axis is just a line in R3.
@@ -178,18 +193,22 @@ class Cable:
         p = axis.Ae + axis.Ve.scalar_mul(axis.Ve.dot(self.head - axis.Ae))
         d = self.head - p
         dir1 = p - self.head
-        dir1 = dir1.unit()
+        if(abs(dir1) != 0):
+            dir1 = dir1.unit()
         dir2 = axis.Ve.cross(dir1.scalar_mul(-1))
-        dir2 = dir2.unit()
+        if(abs(dir2) != 0):
+            dir2 = dir2.unit()
         self.head += dir1.scalar_mul(math.cos(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle)))) 
         self.head += dir2.scalar_mul(math.sin(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle))))
 
         p = axis.Ae + axis.Ve.scalar_mul(axis.Ve.dot(self.tail - axis.Ae))
         d = self.tail - p
         dir1 = p - self.tail
-        dir1 = dir1.unit()
+        if(abs(dir1) != 0):
+            dir1 = dir1.unit()
         dir2 = axis.Ve.cross(dir1.scalar_mul(-1))
-        dir2 = dir2.unit()
+        if(abs(dir2) != 0):
+            dir2 = dir2.unit()
         self.tail += dir1.scalar_mul(math.cos(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle))))
         self.tail += dir2.scalar_mul(math.sin(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle))))
 
@@ -244,9 +263,9 @@ class Coil:
         ax = fig.add_subplot(111, projection='3d')
 
         ax.quiver(x, y, z, u, v, w)
-        ax.set_zlim3d(-7, 7)                    # viewrange for z-axis should be [-4,4] 
-        ax.set_ylim3d(-7, 7)                    # viewrange for y-axis should be [-2,2] 
-        ax.set_xlim3d(-7, 7)                    # viewrange for x-axis should be [-2,2]
+        ax.set_zlim3d(-7, 7)            
+        ax.set_ylim3d(-7, 7)             
+        ax.set_xlim3d(-7, 7)            
 
         plt.show()
 
@@ -255,4 +274,32 @@ class Coil:
         for cable in self.cables:
             cable.rotate(angle, axis)
 
+    def move(self, move: Vector):
+        """!
+        Adds the move position to the actual cable position
 
+        @param move Vector that has the moving direction
+        """
+
+        for cable in self.cables:
+            cable.move(move)
+
+def coil_gen_circle(radius: float, number_of_points: int) -> Coil:
+    """! Generates a circle in ij plane
+    
+    @param radius float
+    @param number_of_points int the 
+           more of it, the more "resolution"
+    @return Coil
+    """
+
+    new_coil = []
+
+    for i in range(number_of_points):
+
+        new_tail = sphericalVector(radius, 2*math.pi/number_of_points*i, 0)
+        new_head = sphericalVector(radius, 2*math.pi/number_of_points*(i+1), 0)
+
+        new_coil.append(Cable(new_head, new_tail, 1))
+
+    return Coil(new_coil)
