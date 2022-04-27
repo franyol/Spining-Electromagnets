@@ -103,6 +103,32 @@ class Vector:
 
       return response
 
+    def rotate(self, angle: float, axis):
+        """!
+        Adds the move position to the actual cable position
+
+        @param angle float of the rotation angle in radians
+        @param axis RotationAxis
+        """
+        if(angle < 0):
+            angle = 2*math.pi + angle
+
+        # p is the closest point of the axis to the cable centre
+        p = axis.Ae + axis.Ve.scalar_mul(axis.Ve.dot(self - axis.Ae))
+        d = self - p
+        dir1 = p - self
+        if(abs(dir1) != 0):
+            dir1 = dir1.unit()
+        dir2 = axis.Ve.cross(dir1.scalar_mul(-1))
+        if(abs(dir2) != 0):
+            dir2 = dir2.unit()
+        res = self + dir1.scalar_mul(math.cos(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle)))) 
+        res += dir2.scalar_mul(math.sin(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle))))
+
+        self.i = res.i
+        self.j = res.j
+        self.k = res.k
+
 def sphericalVector(radius: float, ang_ij: float, ang_rk: float) -> Vector:
     """! Generates a Vector using spherical coordinates
     
@@ -185,31 +211,10 @@ class Cable:
         @param angle float of the rotation angle in radians
         @param axis RotationAxis
         """
-        if(angle < 0):
-            angle = 2*math.pi + angle
 
-        # p is the closest point of the axis to the cable centre
-        p = axis.Ae + axis.Ve.scalar_mul(axis.Ve.dot(self.head - axis.Ae))
-        d = self.head - p
-        dir1 = p - self.head
-        if(abs(dir1) != 0):
-            dir1 = dir1.unit()
-        dir2 = axis.Ve.cross(dir1.scalar_mul(-1))
-        if(abs(dir2) != 0):
-            dir2 = dir2.unit()
-        self.head += dir1.scalar_mul(math.cos(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle)))) 
-        self.head += dir2.scalar_mul(math.sin(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle))))
+        self.head.rotate(angle, axis)
 
-        p = axis.Ae + axis.Ve.scalar_mul(axis.Ve.dot(self.tail - axis.Ae))
-        d = self.tail - p
-        dir1 = p - self.tail
-        if(abs(dir1) != 0):
-            dir1 = dir1.unit()
-        dir2 = axis.Ve.cross(dir1.scalar_mul(-1))
-        if(abs(dir2) != 0):
-            dir2 = dir2.unit()
-        self.tail += dir1.scalar_mul(math.cos(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle))))
-        self.tail += dir2.scalar_mul(math.sin(math.pi/2 - angle/2) * math.sqrt(2 * abs(d)**2 * (1 - math.cos(angle))))
+        self.tail.rotate(angle, axis)
 
 class Coil:
     """!
@@ -236,6 +241,14 @@ class Coil:
         u = []
         v = []
         w = []
+
+        # Temporal
+        u.append(0)
+        v.append(0)
+        w.append(14)
+        x.append(0)
+        y.append(0)
+        z.append(-7)
 
         for cable in self.cables:
 
