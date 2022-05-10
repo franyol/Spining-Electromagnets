@@ -9,6 +9,7 @@ e-mail: f.valbuenao64@gmail.com
 # Standard library imports
 import math
 from re import U
+from xmlrpc.client import Boolean
 
 # Third party imports
 import numpy as np
@@ -233,7 +234,13 @@ class Coil:
         for cable in self.cables:
             cable.set_current(current)
 
-    def plot(self):
+    def plot(self, ax) -> None:
+        """!
+        Plots the coil in ax subplot
+
+        @Param ax plt.subplot
+        @Return None
+        """
 
         x = []
         y = []
@@ -242,13 +249,6 @@ class Coil:
         v = []
         w = []
 
-        # Temporal
-        u.append(0)
-        v.append(0)
-        w.append(14)
-        x.append(0)
-        y.append(0)
-        z.append(-7)
 
         for cable in self.cables:
 
@@ -270,16 +270,11 @@ class Coil:
                 y.append(cable.head.j)
                 z.append(cable.head.k)
 
-        fig = plt.figure()
-
-        ax = fig.add_subplot(111, projection='3d')
-
         ax.quiver(x, y, z, u, v, w)
-        ax.set_zlim3d(-7, 7)            
-        ax.set_ylim3d(-7, 7)             
-        ax.set_xlim3d(-7, 7)            
+        ax.set_zlim3d(-0.07, 0.07)            
+        ax.set_ylim3d(-0.07, 0.07)             
+        ax.set_xlim3d(-0.07, 0.07)            
 
-        plt.show()
 
     def rotate(self, angle: float, axis: RotationAxis):
 
@@ -295,6 +290,63 @@ class Coil:
 
         for cable in self.cables:
             cable.move(move)
+
+class Spinner:
+    """!
+    It saves a list of coils attached to a same rotation axis
+    """
+
+    def __init__(self, coils: list, axis: RotationAxis):
+
+        self.coils = coils
+        self.axis = axis
+
+    def set_current(self, currents: list) -> None:
+        """!
+        Set the current for every coil
+        """
+
+        try:
+            for i in range(len(currents)):
+                self.coils[i].set_current(currents[i])
+        except:
+            print("Currents len must be equal to the number of coils")
+
+    def plot(self, save_fig: Boolean = False, file: str = "frames/new_plt.png") -> plt.figure:
+        """!
+        Plots the coils
+
+        @save_fig Boolean if true, saves the plot
+        @file str with the name of the fite to save the image
+        @Return figure with the plot
+        """
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        for coil in self.coils:
+            coil.plot(ax)
+
+        if save_fig:
+            plt.savefig(file)
+        else:
+            plt.show()
+
+    def rotate(self, angle: float):
+
+        for coil in self.coils:
+            coil.rotate(angle, self.axis)
+
+    def move(self, move: Vector):
+        """!
+        Adds the move position to the actual cable position
+
+        @param move Vector that has the moving direction
+        """
+
+        for coil in self.coils:
+            coil.move(move) 
+
 
 def coil_gen_circle(radius: float, number_of_points: int) -> Coil:
     """! Generates a circle in ij plane

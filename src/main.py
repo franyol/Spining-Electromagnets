@@ -41,28 +41,25 @@ print(abs(ho.head - ho.tail))
 print("")
 """
 
+prot = []
 
-circulo = sp.coil_gen_circle(1, 20)
+circulo = sp.coil_gen_circle(0.03, 20)
 circulo.rotate(3.1416/2, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(1, 0, 0)))
-circulo.plot()
+circulo.rotate(3.1416/2, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(0, 0, 1)))
+# circulo.plot()
 
-ss.plot_torque_vs_angle(circulo, sp.Vector(1, 0, 0), ax)
+# ss.plot_torque_vs_angle(circulo, sp.Vector(1, 0, 0), ax)
 
-a1 = sp.Vector(1, 0, 0)
-a2 = sp.Vector(1, 0, 1)
-a3 = sp.Vector(1+0.6, 0, 0)
-a4 = sp.Vector(1+0.6, 0, 1)
+circulo2 = sp.coil_gen_circle(0.03, 20)
+circulo2.rotate(3.1416/2, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(1, 0, 0)))
+# circulo.plot()
 
-vx= []
+prot.append(circulo)
+prot.append(circulo2)
 
-vx.append(sp.Cable(a2, a1, 1))
-vx.append(sp.Cable(a3, a2, 1))
-vx.append(sp.Cable(a4, a3, 1))
-vx.append(sp.Cable(a1, a4, 1))
+simu = sp.Spinner(prot, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(0, 0, 1)))
+simu.plot()
 
-corbatin = sp.Coil(vx)
-corbatin.plot()
+simu.set_current([1, -1])
+simu.plot()
 
-ss.plot_torque_vs_angle(corbatin, sp.Vector(1, 0, 0), ax)
-
-# plt.savefig('books_read.png')
