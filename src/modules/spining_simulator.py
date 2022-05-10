@@ -9,6 +9,7 @@ e-mail: f.valbuenao64@gmail.com
 # =============================================================================
 
 # Standard library imports
+from http.client import MOVED_PERMANENTLY
 import math
 from re import U
 
@@ -24,7 +25,9 @@ import modules.spining_electromagnets as sp
 
 # =============================================================================
 
-def calc_cable_torque(current_cable: sp.Cable, magnetic_field: sp.Vector,  axis: sp.RotationAxis) -> sp.Vector:
+def calc_cable_torque(current_cable: sp.Cable, 
+                      magnetic_field: sp.Vector,  
+                      axis: sp.RotationAxis) -> sp.Vector:
         """! Calc the torque of every current section
         
         @param current_object has the Cables objects with the torque 
@@ -49,7 +52,9 @@ def calc_cable_torque(current_cable: sp.Cable, magnetic_field: sp.Vector,  axis:
 
 
 
-def calc_torque(current_object, magnetic_field: sp.Vector, axis: sp.RotationAxis) -> sp.Vector:
+def calc_torque(current_object, 
+                magnetic_field: sp.Vector, 
+                axis: sp.RotationAxis) -> sp.Vector:
         """! Calc the torque of every current section
         
         @param current_object has the Cables objects with the torque 
@@ -59,30 +64,42 @@ def calc_torque(current_object, magnetic_field: sp.Vector, axis: sp.RotationAxis
         """
 
         if(isinstance(current_object, sp.Cable)):
-                response = calc_cable_torque(current_object, magnetic_field, axis)
+                response = calc_cable_torque(current_object, 
+                                             magnetic_field, 
+                                             axis)
 
         elif(isinstance(current_object, sp.Coil)):
                 response = sp.Vector()
                 for cable in current_object.cables:
-                        response += calc_cable_torque(cable, magnetic_field, axis)
+                        response += calc_cable_torque(cable, 
+                                                      magnetic_field, 
+                                                      axis)
 
         return response
 
 
-def plot_torque_vs_angle(current_object, magnetic_field: sp.Vector, axis: sp.RotationAxis) -> None:
+def plot_torque_vs_angle(current_object: sp.Coil, 
+                         magnetic_field: sp.Vector, 
+                         axis: sp.RotationAxis) -> None:
 
         torques = []
         angles = np.linspace(0, 6.283, 100)
 
-        for i in angles:
+        for _ in angles:
 
                 current_object.rotate(6.283/100, axis)
-                torques.append(abs(calc_torque(current_object, magnetic_field, axis)))
+                torques.append(abs(calc_torque(current_object, 
+                                               magnetic_field, 
+                                               axis)))
 
         fig = plt.figure()
+        plt.xlabel("angle (rad)")
+        plt.ylabel("torque (Nm)")
 
         torques = np.array(torques)
         plt.plot(angles, torques)
 
         plt.show()
 
+
+# def simulate_movement(current_object: sp.Coil, magnetic_field: sp.Vector) -> None:
