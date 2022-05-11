@@ -144,15 +144,15 @@ def simulate_movement(spinners: list,
         for f in os.listdir('frames'):
             os.remove(os.path.join('frames', f))
 
-        friction = 0.148/(10**6)
+        friction = 0.148/(10**12)
         # Taken from a cilinder of 4cm radious and 10g mass
         inertia_moment = 500/(10**6)
-        torque = 0
-        a = 0
-        w = 0
-        delta_w = 0
-        theta = 0
-        delta_theta = 0
+        torque = []
+        a = []
+        w = []
+        delta_w = []
+        theta = []
+        delta_theta = []
 
         percent = 0
 
@@ -161,6 +161,15 @@ def simulate_movement(spinners: list,
 
                 fig = plt.figure()
                 ax = fig.add_subplot(111, projection='3d')
+
+                for j in range(len(spinners)):
+                        torque.append(0)
+                        a.append(0)
+                        w.append(0)
+                        delta_w.append(0)
+                        theta.append(0)
+                        delta_theta.append(0)
+
                 
                 for j in range(len(spinners)):
                         # In the spinner j
@@ -174,27 +183,27 @@ def simulate_movement(spinners: list,
                         temp = calc_torque(spinners[j], magnetic_field, spinners[j].axis)
 
                         # Get torque in the rotation axis
-                        torque = temp.dot(spinners[j].axis.Ve)
+                        torque[j] = temp.dot(spinners[j].axis.Ve)
 
                         # Calculate torque loss (water friction like)
-                        if w > 0:
-                                loss = friction * w**2 * w/abs(w)
+                        if abs(w[j]) > 0:
+                                loss = friction * w[j]**2 * w[j]/abs(w[j])
                         else:
                                 loss = 0
 
                         # Calculate acceleration
-                        a = (torque - loss)/inertia_moment
+                        a[j] = (torque[j] - loss)/inertia_moment
 
                         # Calculate angular velocity
-                        delta_w = a * delta_time
-                        w += delta_w
+                        delta_w[j] = a[j] * delta_time
+                        w[j] += delta_w[j]
 
                         # Calculate theta
-                        delta_theta = w * delta_time
-                        theta += delta_theta
+                        delta_theta[j] = w[j] * delta_time
+                        theta[j] += delta_theta[j]
 
                         # Rotate
-                        spinners[j].rotate(delta_theta)
+                        spinners[j].rotate(delta_theta[j])
 
                         # Make frame plots
                         for coil in spinners[j].coils:
