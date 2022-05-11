@@ -6,47 +6,13 @@ from mpl_toolkits import mplot3d
 
 import numpy as np
 
-a = sp.Vector(0.3, -0.5, 0.3)
-b = sp.Vector(0.1, 0.2, 0.3)
-
-c = sp.Vector(0.5, 0.2, 0.6)
-
-x = sp.Vector(0, 0, 0)
-y = sp.Vector(0, 0, 1)
-
-cl = []
-ho = sp.Cable(a, b, 1)
-cl.append(sp.Cable(a, b, 1)) 
-cl.append(sp.Cable(b, c, 1))
-
-cc = sp.Coil(cl)
-
-ax = sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(0, 0, 1))
-
-"""
-
-print(ho.head)
-print(ho.tail)
-print(ho.head - ho.tail)
-print(abs(ho.head - ho.tail))
-
-print("")
-
-ho.rotate(-3.1416/2, ax)
-
-print(ho.head)
-print(ho.tail)
-print(ho.head - ho.tail)
-print(abs(ho.head - ho.tail))
-print("")
-"""
 
 prot = []
+prot2 = []
 
 circulo = sp.coil_gen_circle(0.03, 20)
 circulo.rotate(3.1416/2, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(1, 0, 0)))
 circulo.rotate(3.1416/2, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(0, 0, 1)))
-# circulo.plot()
 
 # ss.plot_torque_vs_angle(circulo, sp.Vector(1, 0, 0), ax)
 
@@ -57,9 +23,39 @@ circulo2.rotate(3.1416/2, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(1, 0, 0)
 prot.append(circulo)
 prot.append(circulo2)
 
-simu = sp.Spinner(prot, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(0, 0, 1)))
-simu.plot()
+simu = sp.Spinner(prot, sp.RotationAxis(sp.Vector(-0.03, 0, 0), sp.Vector(0, 0, 1)))
 
-simu.set_current([1, -1])
-simu.plot()
+simu.move(sp.Vector(-0.03, 0, 0))
 
+circulo3 = sp.coil_gen_circle(0.03, 20)
+circulo3.rotate(3.1416/2, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(1, 0, 0)))
+circulo3.rotate(3.1416/2, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(0, 0, 1)))
+
+
+circulo4 = sp.coil_gen_circle(0.03, 20)
+circulo4.rotate(3.1416/2, sp.RotationAxis(sp.Vector(0, 0, 0), sp.Vector(1, 0, 0)))
+# circulo.plot()
+
+prot2.append(circulo3)
+prot2.append(circulo4)
+
+simu2 = sp.Spinner(prot2, sp.RotationAxis(sp.Vector(0.03, 0, 0), sp.Vector(0, 0, 1)))
+
+simu2.move(sp.Vector(0.03, 0, 0))
+
+
+i_c1 = []
+i_c2 = []
+
+for i in range(160):
+    i_c1.append(1)
+    i_c2.append(1)
+
+b_field = sp.Vector(0.5, 0.5, 0)
+b_field = b_field.unit()
+b_field = b_field.scalar_mul(0.07)
+
+ss.simulate_movement([simu, simu2], 
+                     b_field, 
+                     [list([i_c1, i_c2]), list([i_c1, i_c2])], 
+                     0.03)

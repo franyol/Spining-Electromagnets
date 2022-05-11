@@ -275,7 +275,6 @@ class Coil:
         ax.set_ylim3d(-0.07, 0.07)             
         ax.set_xlim3d(-0.07, 0.07)            
 
-
     def rotate(self, angle: float, axis: RotationAxis):
 
         for cable in self.cables:
@@ -364,6 +363,6 @@ def coil_gen_circle(radius: float, number_of_points: int) -> Coil:
         new_tail = sphericalVector(radius, 2*math.pi/number_of_points*i, 0)
         new_head = sphericalVector(radius, 2*math.pi/number_of_points*(i+1), 0)
 
-        new_coil.append(Cable(new_head, new_tail, 1))
+        new_coil.append(Cable(new_head, new_tail, 1.0))
 
     return Coil(new_coil)
