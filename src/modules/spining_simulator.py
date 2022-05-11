@@ -177,7 +177,10 @@ def simulate_movement(spinners: list,
                         torque = temp.dot(spinners[j].axis.Ve)
 
                         # Calculate torque loss (water friction like)
-                        loss = friction * w**2 * torque/abs(torque)
+                        if w > 0:
+                                loss = friction * w**2 * w/abs(w)
+                        else:
+                                loss = 0
 
                         # Calculate acceleration
                         a = (torque - loss)/inertia_moment
