@@ -144,7 +144,7 @@ def simulate_movement(spinners: list,
         for f in os.listdir('frames'):
             os.remove(os.path.join('frames', f))
 
-        friction = 0.148/(10**12)
+        friction = 0.148/(10**6)
         # Taken from a cilinder of 4cm radious and 10g mass
         inertia_moment = 500/(10**6)
         torque = []
@@ -186,8 +186,8 @@ def simulate_movement(spinners: list,
                         torque[j] = temp.dot(spinners[j].axis.Ve)
 
                         # Calculate torque loss (water friction like)
-                        if abs(w[j]) > 0:
-                                loss = friction * w[j]**2 * w[j]/abs(w[j])
+                        if abs(w[j]) > 9/(10**6):
+                                loss = 10/(10**6) * w[j]/abs(w[j])
                         else:
                                 loss = 0
 
