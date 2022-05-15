@@ -145,6 +145,20 @@ def sphericalVector(radius: float, ang_ij: float, ang_rk: float) -> Vector:
     response.j = radius*math.sin(ang_ij)*math.cos(ang_rk)
     return response
 
+def cilindricalVector(radius: float, ang_ij: float, z: float) -> Vector:
+    """! Generates a Vector using spherical coordinates
+    
+    @param radius float
+    @param ang_ij float angle in the ij plane in radians 0 is the i axis
+    @param z float
+    @return Vector generated
+    """
+    response = Vector()
+    response.k = z
+    response.i = radius*math.cos(ang_ij)
+    response.j = radius*math.sin(ang_ij)
+    return response
+
 class RotationAxis:
     """!
     The rotation axis is just a line in R3.
@@ -365,4 +379,49 @@ def coil_gen_circle(radius: float, number_of_points: int) -> Coil:
 
         new_coil.append(Cable(new_head, new_tail, 1.0))
 
+    return Coil(new_coil)
+
+
+def coil_gen_coil(radius: float, 
+                  number_of_points: int, 
+                  number_of_turns: int,
+                  turns_per_layer: int,
+                  cable_diameter: float = 0.000321) -> Coil:
+    """! Generates a circle in ij plane
+    
+    @param radius float
+    @param number_of_points int the 
+           more of it, the more "resolution"
+    @return Coil
+    """
+
+    width = turns_per_layer * cable_diameter
+
+    new_coil = []
+    turn_count = 0
+    layer_count = 0
+    
+    while(turn_count < number_of_turns):
+        for i in range(number_of_points):
+
+            if( layer_count%2 == 0 ):
+                new_tail = cilindricalVector(radius + cable_diameter*layer_count, 
+                                        2*math.pi/number_of_points*i, 
+                                        (width/2) - (cable_diameter/number_of_points * (i)) - (cable_diameter*(turn_count%turns_per_layer)))
+                new_head = cilindricalVector(radius + cable_diameter*layer_count,
+                                        2*math.pi/number_of_points*(i+1),
+                                        (width/2) - (cable_diameter/number_of_points * (i+1)) - (cable_diameter*(turn_count%turns_per_layer)))
+            
+            else:
+                new_tail = cilindricalVector(radius + cable_diameter*layer_count, 
+                                        2*math.pi/number_of_points*i, 
+                                        (-width/2) + (cable_diameter/number_of_points * (i)) + (cable_diameter*(turn_count%turns_per_layer)))
+                new_head = cilindricalVector(radius + cable_diameter*layer_count,
+                                        2*math.pi/number_of_points*(i+1),
+                                        (-width/2) + (cable_diameter/number_of_points * (i+1)) + (cable_diameter*(turn_count%turns_per_layer)))
+
+            new_coil.append(Cable(new_head, new_tail, 1.0))
+        turn_count += 1
+        if(turn_count >= turns_per_layer*(layer_count+1)):
+            layer_count += 1
     return Coil(new_coil)

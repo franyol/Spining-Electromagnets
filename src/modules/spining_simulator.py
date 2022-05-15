@@ -11,6 +11,7 @@ e-mail: f.valbuenao64@gmail.com
 # Standard library imports
 import os
 import sys
+from xmlrpc.client import Boolean
 
 # Third party imports
 import cv2 as cv
@@ -23,6 +24,20 @@ from mpl_toolkits import mplot3d
 import modules.spining_electromagnets as sp
 
 # =============================================================================
+
+NO_FRIC = 0
+LINEAR_FRIC = 1
+CUADRATIC_FRIC = 2
+CUBIC_FRIC = 3
+CONS_FRIC = 4
+
+# Deffault values
+Friction_Coefficient1 = 0.148/(10**12)
+Friction_Coefficient2 = 0.148/(10**12)
+Friction_Coefficient3 = 0.148/(10**12)
+
+Friction_Calc = LINEAR_FRIC
+
 
 def calc_cable_torque(current_cable: sp.Cable, 
                       magnetic_field: sp.Vector,  
@@ -112,7 +127,8 @@ def plot_torque_vs_angle(current_object: sp.Coil,
 def simulate_movement(spinners: list, 
                       magnetic_field: sp.Vector, 
                       sim_currents: list, 
-                      delta_time: float) -> None:
+                      delta_time: float,
+                      save_video: bool = False) -> None:
         """! Generate video frames and graphs from a current list of values in time
         
         @param spiners list of the spinner objects in the simulation
@@ -136,15 +152,15 @@ def simulate_movement(spinners: list,
                 print("[ERROR] spinners and sim_currents dimensions must match")
                 return
 
-        #Creates frames dir if it does not exist
-        if not os.path.exists("frames"):
-            os.mkdir('frames')
+        if save_video:
+                #Creates frames dir if it does not exist
+                if not os.path.exists("frames"):
+                        os.mkdir('frames')
 
-        #Remove old frames
-        for f in os.listdir('frames'):
-            os.remove(os.path.join('frames', f))
+                #Remove old frames
+                for f in os.listdir('frames'):
+                        os.remove(os.path.join('frames', f))
 
-        friction = 0.148/(10**6)
         # Taken from a cilinder of 4cm radious and 10g mass
         inertia_moment = 500/(10**6)
         torque = []
@@ -159,8 +175,9 @@ def simulate_movement(spinners: list,
         for i in range(len(sim_currents[0][0])):
                 # In the frame i
 
-                fig = plt.figure()
-                ax = fig.add_subplot(111, projection='3d')
+                if save_video:
+                        fig = plt.figure()
+                        ax = fig.add_subplot(111, projection='3d')
 
                 for j in range(len(spinners)):
                         torque.append(0)
@@ -185,11 +202,23 @@ def simulate_movement(spinners: list,
                         # Get torque in the rotation axis
                         torque[j] = temp.dot(spinners[j].axis.Ve)
 
-                        # Calculate torque loss (water friction like)
-                        if abs(w[j]) > 9/(10**6):
-                                loss = 10/(10**6) * w[j]/abs(w[j])
-                        else:
+                        # Calculate torque loss 
+                        if(Friction_Calc == NO_FRIC):
                                 loss = 0
+                        elif(Friction_Calc == LINEAR_FRIC):
+                                loss = Friction_Coefficient1 * w[j]
+                        elif(Friction_Calc == CUADRATIC_FRIC):
+                                loss = Friction_Coefficient1 * w[j]
+                                loss += Friction_Coefficient2 * w[j]**2
+                        elif(Friction_Calc == CUBIC_FRIC):
+                                loss = Friction_Coefficient1 * w[j]
+                                loss += Friction_Coefficient2 * w[j]**2
+                                loss += Friction_Coefficient3 * w[j]**3
+                        elif(Friction_Calc == LINEAR_FRIC):
+                                if( w[j] < Friction_Coefficient1):
+                                        loss = 0
+                                else:
+                                        loss = Friction_Coefficient1
 
                         # Calculate acceleration
                         a[j] = (torque[j] - loss)/inertia_moment
@@ -205,33 +234,35 @@ def simulate_movement(spinners: list,
                         # Rotate
                         spinners[j].rotate(delta_theta[j])
 
-                        # Make frame plots
-                        for coil in spinners[j].coils:
-                                coil.plot(ax)
+                        if save_video:
+                                # Make frame plots
+                                for coil in spinners[j].coils:
+                                        coil.plot(ax)
 
-                
-                # Save frame
-                plt.savefig("frames/frame"+str(i))
+                if save_video:
+                        # Save frame
+                        plt.savefig("frames/frame"+str(i))
 
-                percent += 100/len(sim_currents[0][0])
-                print("creating video: [ " + str(int(percent)) + "% ]")
-                sys.stdout.write("\033[F")
+                        percent += 100/len(sim_currents[0][0])
+                        print("creating video: [ " + str(int(percent)) + "% ]")
+                        sys.stdout.write("\033[F")
 
-                plt.close()
-                # Make graphs
+                        plt.close()
+                        # Make graphs
+        
+        if save_video:
+                print("creating video: [ 100% ]")
 
-        print("creating video: [ 100% ]")
+                # Save graphs
+                # Save video
+                first_frame = cv.imread("frames/frame0.png")
+                height, width, _ = first_frame.shape
 
-        # Save graphs
-        # Save video
-        first_frame = cv.imread("frames/frame0.png")
-        height, width, _ = first_frame.shape
+                fourcc = cv.VideoWriter_fourcc('m', 'p', '4', 'v')
+                video = cv.VideoWriter('simulation.mp4', fourcc, int(1/delta_time), (width, height))
+                for j in range(len(sim_currents[0][0])):
+                        img = cv.imread("frames/frame" + str(j) + ".png")
+                        video.write(img)
 
-        fourcc = cv.VideoWriter_fourcc('m', 'p', '4', 'v')
-        video = cv.VideoWriter('simulation.mp4', fourcc, int(1/delta_time), (width, height))
-        for j in range(len(sim_currents[0][0])):
-                img = cv.imread("frames/frame" + str(j) + ".png")
-                video.write(img)
-
-        video.release()
+                video.release()
 
