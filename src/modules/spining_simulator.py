@@ -128,7 +128,8 @@ def simulate_movement(spinners: list,
                       magnetic_field: sp.Vector, 
                       sim_currents: list, 
                       delta_time: float,
-                      save_video: bool = False) -> None:
+                      save_video: bool = False,
+                      project_path: str = '') -> None:
         """! Generate video frames and graphs from a current list of values in time
         
         @param spiners list of the spinner objects in the simulation
@@ -139,6 +140,7 @@ def simulate_movement(spinners: list,
                             elements, then the list dimentions must be
                             sim_currents dimentions = [3, NUMB_OF_COILS, NUMB_OF_FRAMES])
         @param delta_time float with the time between every sim frame
+        @param video_path str with the path to save the video
         @return None
         """
 
@@ -154,12 +156,12 @@ def simulate_movement(spinners: list,
 
         if save_video:
                 #Creates frames dir if it does not exist
-                if not os.path.exists("frames"):
-                        os.mkdir('frames')
+                if not os.path.exists(project_path + "/frames"):
+                        os.mkdir(project_path + "/frames")
 
                 #Remove old frames
-                for f in os.listdir('frames'):
-                        os.remove(os.path.join('frames', f))
+                for f in os.listdir(project_path + "/frames"):
+                        os.remove(os.path.join(project_path + "/frames", f))
 
         # Taken from a cilinder of 4cm radious and 10g mass
         inertia_moment = 500/(10**6)
@@ -241,13 +243,13 @@ def simulate_movement(spinners: list,
 
                 if save_video:
                         # Save frame
-                        plt.savefig("frames/frame"+str(i))
+                        plt.savefig(project_path + "/frames/frame"+str(i))
 
                         percent += 100/len(sim_currents[0][0])
                         print("creating video: [ " + str(int(percent)) + "% ]")
                         sys.stdout.write("\033[F")
 
-                        plt.close()
+                        plt.close('all')
                         # Make graphs
         
         if save_video:
@@ -255,13 +257,13 @@ def simulate_movement(spinners: list,
 
                 # Save graphs
                 # Save video
-                first_frame = cv.imread("frames/frame0.png")
+                first_frame = cv.imread("/frames/frame0.png")
                 height, width, _ = first_frame.shape
 
                 fourcc = cv.VideoWriter_fourcc('m', 'p', '4', 'v')
-                video = cv.VideoWriter('simulation.mp4', fourcc, int(1/delta_time), (width, height))
+                video = cv.VideoWriter(project_path + "/simulation.mp4", fourcc, int(1/delta_time), (width, height))
                 for j in range(len(sim_currents[0][0])):
-                        img = cv.imread("frames/frame" + str(j) + ".png")
+                        img = cv.imread(project_path + "/frames/frame" + str(j) + ".png")
                         video.write(img)
 
                 video.release()

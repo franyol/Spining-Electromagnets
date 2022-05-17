@@ -9,6 +9,7 @@ e-mail: f.valbuenao64@gmail.com
 # Standard library imports
 import math
 from re import U
+from typing import Any
 from xmlrpc.client import Boolean
 
 # Third party imports
@@ -248,7 +249,7 @@ class Coil:
         for cable in self.cables:
             cable.set_current(current)
 
-    def plot(self, ax) -> None:
+    def plot(self, ax, color: str = 'blue') -> None:
         """!
         Plots the coil in ax subplot
 
@@ -284,7 +285,7 @@ class Coil:
                 y.append(cable.head.j)
                 z.append(cable.head.k)
 
-        ax.quiver(x, y, z, u, v, w)
+        ax.quiver(x, y, z, u, v, w, color=color)
         ax.set_zlim3d(-0.07, 0.07)            
         ax.set_ylim3d(-0.07, 0.07)             
         ax.set_xlim3d(-0.07, 0.07)            
@@ -325,7 +326,7 @@ class Spinner:
         except:
             print("Currents len must be equal to the number of coils")
 
-    def plot(self, save_fig: Boolean = False, file: str = "frames/new_plt.png") -> plt.figure:
+    def plot(self, ax, color: str = 'blue', save_fig: Boolean = False, file: str = "frames/new_plt.png") -> plt.figure:
         """!
         Plots the coils
 
@@ -334,11 +335,8 @@ class Spinner:
         @Return figure with the plot
         """
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-
         for coil in self.coils:
-            coil.plot(ax)
+            coil.plot(ax, color)
 
         if save_fig:
             plt.savefig(file)
