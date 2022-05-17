@@ -34,24 +34,15 @@ class Vector:
         
     def __str__(self):
 
-        cadena = ""
-        if self.i < 0:
-            cadena += "- "
-        cadena += str(abs(self.i)) + "i "
+        result = ""
 
-        if self.j < 0:
-            cadena += "- "
-        else:
-            cadena += "+ "
-        cadena += str(abs(self.j)) + "j "
+        result += str(self.i)
+        result += "; "
+        result += str(self.j)
+        result += "; "
+        result += str(self.k)
 
-        if self.k < 0:
-            cadena += "- "
-        else:
-            cadena += "+ "
-        cadena += str(abs(self.k)) + "k"
-
-        return cadena
+        return result
         
     def __add__(self, other):
 
@@ -304,6 +295,20 @@ class Coil:
 
         for cable in self.cables:
             cable.move(move)
+
+    def get_vectors(self) -> list:
+        """!
+        Returns the list of vectors of the coil: 
+        
+        @return list [[head1, tail1], [head2, tail2], ...]
+        """
+
+        vectors = []
+        for cable in self.cables:
+            vectors.append([cable.head, cable.tail])
+
+        return vectors
+
 
 class Spinner:
     """!

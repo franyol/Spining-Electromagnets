@@ -33,6 +33,10 @@ class Designer(tk.Tk):
 
         global coils, coils_names
 
+        #Clean Frame
+        for widget in self.winfo_children():
+            widget.destroy()
+
         self.title("Designer")
 
         menubar = tk.Menu(self)
@@ -41,7 +45,7 @@ class Designer(tk.Tk):
         filemenu = tk.Menu(menubar, tearoff=0)
         filemenu.add_command(label="New", command=self.new_project)
         filemenu.add_command(label="Open", command=self.open_project)
-        filemenu.add_command(label="Save")
+        filemenu.add_command(label="Save", command=self.save_project)
         helpmenu = tk.Menu(menubar, tearoff=0)
         helpmenu.add_command(label="Manual")
 
@@ -49,7 +53,7 @@ class Designer(tk.Tk):
         menubar.add_cascade(label="Help", menu=helpmenu)
 
         self.path_text = tk.StringVar()
-        self.path_lbl = tk.Label(self, text="Opened : No directory selected")
+        self.path_lbl = tk.Label(self, text="Working directory: " + projectpath)
         self.path_lbl.place(x=20, y=20)
 
         self.img_frame = tk.Frame(self, width=520,height=370)
@@ -136,21 +140,27 @@ class Designer(tk.Tk):
         self.angle.insert(0, "1.57")
         self.angle.place(x=650,y=420)
 
-        
 
 
 
     def open_project(self):
 
-        global projectpath
+        global projectpath, coils, coils_names, coil_counter
 
         path = filedialog.askdirectory(title= "Open project folder")
 
         if path:
             #Updating the path label
             projectpath = os.path.abspath(path)
-            self.path_text.set("Working on: " + str(projectpath))
-            self.path_lbl.config(textvariable=self.path_text)
+
+            coils = []
+            coils_names = []
+
+            coil_counter = 0
+
+            self.initial_window()
+
+        self.load_project()
 
     def new_project(self):
 
@@ -178,6 +188,9 @@ class Designer(tk.Tk):
         self.window.mainloop()
 
     def ask_return(self):
+
+        global coils, coils_names, coil_counter, projectpath
+
         new_path = self.entry.get()
 
         os.mkdir(new_path)
@@ -186,10 +199,80 @@ class Designer(tk.Tk):
         if path:    
             #Updating the path label
             projectpath = os.path.abspath(path)
-            self.path_text.set("Opened : " + str(projectpath))
-            self.path_lbl.config(textvariable=self.path_text)
+            
+            coils = []
+            coils_names = []
 
+            coil_counter = 0
+
+        self.initial_window()
         self.window.destroy()
+
+    def save_project(self):
+
+        global projectpath, coils
+
+        #Creates project save if it does not exist
+        if os.path.exists(projectpath + "/projectSave.txt"):
+            #Erase previous save
+            open(projectpath + "/projectSave.txt", "w").close()
+
+        with open(projectpath + "/projectSave.txt", 'w') as file:
+            for coil in coils:
+                file.write("StartCoil")
+                file.write("\n")
+                vectors = coil.get_vectors()
+                for vector in vectors:
+                    file.write(str(vector[0]))
+                    file.write(', ')
+                    file.write(str(vector[1]))
+                    file.write("\n")
+                file.write("EndCoil")
+                file.write("\n")
+
+    def load_project(self):
+
+        global coils, coils_names, coil_counter
+
+        with open(projectpath + "/projectSave.txt", 'r') as file:
+            lines = file.readlines()
+        
+        cables_counter = 0
+        
+        for line in lines:
+            line = line.replace('\n', '')
+
+            if line == "StartCoil":
+                cables = []
+            elif line == "EndCoil":
+                coils.append(sp.Coil(cables))
+                coils_names.append("Coil " + str(coil_counter))
+                coil_counter += 1
+            else:
+                c_list = lines[cables_counter].split(',')
+                h_list = c_list[0].split(';')
+                t_list = c_list[1].split(';')
+                cables.append(sp.Cable(
+                                       sp.Vector(float(h_list[0]),
+                                                 float(h_list[1]),
+                                                 float(h_list[2])),
+                                       sp.Vector(float(t_list[0]),
+                                                 float(t_list[1]),
+                                                 float(t_list[2])),
+                                       1))
+            cables_counter += 1
+
+        self.coils_menu = tk.OptionMenu(self,
+                                   self.menu_var,
+                                   coils_names[len(coils_names)-1],
+                                   *coils_names,
+                                   command=self.set_coil)
+        self.coils_menu.place(x=580, y=110, width= 100)
+        
+        self.menu_var.set(coils_names[len(coils)-1])
+        self.plot_image()
+
+
 
     def create_polygon(self):
         
