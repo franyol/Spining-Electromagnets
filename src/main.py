@@ -14,10 +14,13 @@ from PIL import Image, ImageTk
 
 
 projectpath = os.path.abspath('')
+simpath = os.path.abspath('')
 
 axis = ["x", "y", "z"]
 coils = []
 coils_names = []
+spinners = []
+spinners_names = ["None"]
 
 coil_counter = 0
 
@@ -31,7 +34,7 @@ class Designer(tk.Tk):
 
     def initial_window(self) -> None:
 
-        global coils, coils_names
+        global coils, coils_names, projectpath
 
         #Clean Frame
         for widget in self.winfo_children():
@@ -82,7 +85,7 @@ class Designer(tk.Tk):
         ##########################################################
         tk.Label(self, text="Create").place(x=580, y=160)
         tk.Label(self, 
-                 text= "Radious:").place(x=570,y=220)
+                 text= "Radius:").place(x=570,y=220)
         self.radious = tk.Entry(self, width=8)
         self.radious.insert(0, "0.03")
         self.radious.place(x=580,y=240)
@@ -232,7 +235,7 @@ class Designer(tk.Tk):
 
     def load_project(self):
 
-        global coils, coils_names, coil_counter
+        global coils, coils_names, coil_counter, projectpath
 
         with open(projectpath + "/projectSave.txt", 'r') as file:
             lines = file.readlines()
@@ -264,15 +267,12 @@ class Designer(tk.Tk):
 
         self.coils_menu = tk.OptionMenu(self,
                                    self.menu_var,
-                                   coils_names[len(coils_names)-1],
                                    *coils_names,
                                    command=self.set_coil)
         self.coils_menu.place(x=580, y=110, width= 100)
         
         self.menu_var.set(coils_names[len(coils)-1])
         self.plot_image()
-
-
 
     def create_polygon(self):
         
@@ -282,16 +282,16 @@ class Designer(tk.Tk):
         self.coils_menu.destroy()
         self.coils_menu = tk.OptionMenu(self,
                                    self.menu_var,
-                                   coils_names[len(coils_names)-1],
                                    *coils_names,
                                    command=self.set_coil)
         self.coils_menu.place(x=580, y=110, width= 100)
+
+        self.menu_var.set(coils_names[len(coils)-1])
 
         coils.append(sp.coil_gen_circle(float(self.radious.get()),
                                         int(self.vertices.get())))
         coil_counter += 1
 
-        self.menu_var.set(coils_names[len(coils)-1])
         self.plot_image()
 
     def create_coil(self):
@@ -302,7 +302,6 @@ class Designer(tk.Tk):
         self.coils_menu.destroy()
         self.coils_menu = tk.OptionMenu(self,
                                    self.menu_var,
-                                   coils_names[len(coils_names)-1],
                                    *coils_names,
                                    command=self.set_coil)
         self.coils_menu.place(x=580, y=110, width= 100)
@@ -317,7 +316,7 @@ class Designer(tk.Tk):
         self.menu_var.set(coils_names[len(coils)-1])
         self.plot_image()
 
-    def set_coil(self, option):
+    def set_coil(self, _):
         self.plot_image()
 
     def plot_image(self):
@@ -417,16 +416,263 @@ class Simulation(tk.Tk):
     def __init__(self):
         super().__init__()
         self.initial_window()
+        self.geometry("800x600")
 
     def initial_window(self) -> None:
 
-        self.title("Simulation")
+        global coils, coils_names, simpath, spinners, spinners_names
 
-        tk.Button(self, 
-                  text="Designer",
-                  command=open_designer).pack(side=tk.LEFT,
-                                              pady=20,
-                                              padx=10)
+        #Clean Frame
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        self.title("Simulator")
+
+        menubar = tk.Menu(self)
+        self.config(menu=menubar)
+
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="New", command=self.new_sim)
+        filemenu.add_command(label="Open", command=self.open_sim)
+        filemenu.add_command(label="Save", command=self.save_sim)
+        helpmenu = tk.Menu(menubar, tearoff=0)
+        helpmenu.add_command(label="Manual")
+
+        menubar.add_cascade(label="File", menu=filemenu)
+        menubar.add_cascade(label="Help", menu=helpmenu)
+
+        self.path_text = tk.StringVar()
+        self.path_lbl = tk.Label(self, text="Simulation: " + simpath)
+        self.path_lbl.place(x=20, y=20)
+
+
+        self.spin_var = []
+        self.spin_menu = []
+
+        tk.Label(self, text="Fix into").place(x=100, y=70)
+        for i in range(len(coils_names)):
+            tk.Label(self, text=coils_names[i]).place(x=20, y=90+40*i)
+            self.spin_var.append(tk.StringVar(self))
+            self.spin_var[i].set("None")
+            self.spin_menu.append(tk.OptionMenu(self,
+                                                self.spin_var[i],
+                                                *spinners_names))
+            self.spin_menu[i].place(x=80, y=85+40*i, width= 100)
+
+        tk.Button(self, text="τ vs θ").place(x=690, y=115)
+
+        tk.Button(self, text="Start").place(x=710, y=45)
+
+
+        ############################################################
+
+        self.sim_frame = tk.Frame(self, width=520,height=180)
+        self.sim_frame.config(relief="sunken", bd=5)
+        self.sim_frame.place(x=250, y=80)
+
+        tk.Label(self, text="**Simulation setings**").place(x=268, y=90)
+        tk.Label(self,
+                 text= "sim time:").place(x=270,y=120)
+        self.simtime = tk.Entry(self, width=8)
+        self.simtime.insert(0, "0.1")
+        tk.Label(self,
+                 text= "seconds").place(x=350,y=140)
+        self.simtime.place(x=270,y=140)
+        tk.Label(self,
+                 text= "time step:").place(x=270,y=160)
+        self.step = tk.Entry(self, width=8)
+        self.step.insert(0, "0.0005")
+        tk.Label(self,
+                 text= "seconds").place(x=350,y=180)
+        self.step.place(x=270,y=180)
+
+        ############################################################
+
+        self.coilsig_frame = tk.Frame(self, width=220,height=260)
+        self.coilsig_frame.config(relief="sunken", bd=5)
+        self.coilsig_frame.place(x=250, y=280)
+
+        tk.Label(self, text="**Coil signals**").place(x=268, y=290)
+
+        self.coil_sel_var = tk.StringVar(self)
+        self.coil_sel_menu = tk.OptionMenu(self,
+                                   self.coil_sel_var,
+                                   *coils_names)
+        self.coil_sel_menu.place(x=360, y=315, width= 100)
+        self.coil_sel_var.set("None")
+
+        tk.Label(self, 
+                 text= "frec:").place(x=268,y=330)
+        self.frec = tk.Entry(self, width=8)
+        self.frec.insert(0, "50")
+        tk.Label(self,
+                 text= "Hz").place(x=350,y=350)
+        self.frec.place(x=270,y=350)
+        tk.Label(self,
+                 text= "start time:").place(x=270,y=370)
+        self.start = tk.Entry(self, width=8)
+        self.start.insert(0, "0.0")
+        tk.Label(self,
+                 text= "seconds").place(x=350,y=390)
+        self.start.place(x=270,y=390)
+        tk.Label(self, 
+                 text= "Amplitude:").place(x=268,y=410)
+        self.amp = tk.Entry(self, width=8)
+        self.amp.insert(0, "50")
+        tk.Label(self,
+                 text= "A").place(x=350,y=430)
+        self.amp.place(x=270,y=430)
+        
+        ############################################################
+
+        self.spin_frame = tk.Frame(self, width=220,height=260)
+        self.spin_frame.config(relief="sunken", bd=5)
+        self.spin_frame.place(x=540, y=280)
+
+        tk.Label(self, text="**Spinner setings**").place(x=550, y=290)
+        self.spinner_sel_var = tk.StringVar(self)
+        self.spinner_sel_menu = tk.OptionMenu(self,
+                                   self.spinner_sel_var,
+                                   *spinners_names)
+        self.spinner_sel_menu.place(x=650, y=315, width= 100)
+        self.spinner_sel_var.set("None")
+
+        tk.Button(self, text="Add new", command=self.add_spinner).place(x=650, y=350)
+        tk.Button(self, text="Del last", command=self.del_spinner).place(x=650, y=380)
+        ############################################################
+
+        
+
+    
+    def open_sim(self):
+
+        global simpath, coils, coils_names, coil_counter
+
+        path = filedialog.askdirectory(title= "Open simulation folder")
+
+        if path:
+            #Updating the path label
+            simpath = os.path.abspath(path)
+
+            self.initial_window()
+
+        self.load_sim()
+
+    def new_sim(self):
+
+        global simpath
+
+        self.window = tk.Tk()
+        self.window.title("New simulation")
+
+        tk.Label(self.window, 
+                 text= "Write the new simulation's name:").pack(side=tk.TOP, 
+                                                padx=200,
+                                                pady=50)
+
+        self.entry = tk.Entry(self.window)
+        self.entry.insert(0, "NewSim")
+        self.entry.pack(side = tk.TOP,
+                padx=200,
+                pady=50)
+
+        tk.Button(self.window, text="Ok",
+                command=self.ask_return).pack(side=tk.TOP,
+                                                    pady=20,
+                                                    padx=10)
+
+        self.window.mainloop()
+
+    def ask_return(self):
+
+        global simpath, projectpath
+
+        new_path = self.entry.get()
+
+        os.mkdir(projectpath + "/" + new_path)
+        path = filedialog.askdirectory(title="Select the new simulation's folder")
+
+        if path:    
+            #Updating the path label
+            simpath = os.path.abspath(path)
+
+        self.initial_window()
+        self.window.destroy()
+
+    def save_sim(self):
+
+        global projectpath, coils
+
+        #Creates project save if it does not exist
+        if os.path.exists(simpath + "/simParameters.txt"):
+            #Erase previous save
+            open(simpath + "/simParameters.txt", "w").close()
+
+        with open(simpath + "/simParameters.txt", 'w') as file:
+            file.write("StartCoil")
+                
+    def load_sim(self):
+
+        global coils, coils_names, simpath
+
+    def add_spinner(self):
+
+        global spinners, spinners_names, coils
+
+        spinners_names.append("Spinner" + str(len(spinners_names)-1))
+
+        self.spinner_sel_menu.destroy()
+        self.spinner_sel_menu = tk.OptionMenu(self,
+                                   self.spinner_sel_var,
+                                   *spinners_names)
+        self.spinner_sel_menu.place(x=650, y=315, width= 100)
+        self.spinner_sel_var.set(spinners_names[len(spinners_names)-1])
+
+        for i in range(len(coils_names)):
+            self.spin_menu[i].destroy()
+
+        self.spin_menu = []
+
+        for i in range(len(coils_names)):
+            self.spin_menu.append(tk.OptionMenu(self,
+                                                    self.spin_var[i],
+                                                    *spinners_names))
+            self.spin_menu[i].place(x=80, y=85+40*i, width= 100)
+        
+
+    def del_spinner(self):
+
+        global spinners, spinners_names
+
+        if len(spinners_names) > 1:
+
+            temp = spinners_names.pop()
+
+            for i in range(len(coils_names)):
+                self.spin_menu[i].destroy()
+
+            self.spin_menu = []
+        
+            for i in range(len(coils_names)):
+                if self.spin_var[i].get() == temp:
+                    self.spin_var[i].set("None")
+                self.spin_menu.append(tk.OptionMenu(self,
+                                                    self.spin_var[i],
+                                                    *spinners_names))
+                self.spin_menu[i].place(x=80, y=85+40*i, width= 100)
+                
+
+
+            self.spinner_sel_menu.destroy()
+            self.spinner_sel_var.set(spinners_names[len(spinners_names)-1])
+            self.spinner_sel_menu = tk.OptionMenu(self,
+                                    self.spinner_sel_var,
+                                    *spinners_names)
+            self.spinner_sel_menu.place(x=650, y=315, width= 100)
+            
+
+            
+
 
 
 def open_designer():

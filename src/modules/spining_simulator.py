@@ -100,7 +100,7 @@ def calc_torque(current_object,
         return response
 
 
-def plot_torque_vs_angle(current_object: sp.Coil, 
+def plot_torque_vs_angle(current_object, 
                          magnetic_field: sp.Vector, 
                          axis: sp.RotationAxis) -> None:
 
@@ -109,10 +109,19 @@ def plot_torque_vs_angle(current_object: sp.Coil,
 
         for _ in angles:
 
-                current_object.rotate(6.283/100, axis)
-                torques.append(abs(calc_torque(current_object, 
-                                               magnetic_field, 
-                                               axis)))
+                if(isinstance(current_object, sp.Coil)):
+                        torques.append(abs(calc_torque(current_object, 
+                                                magnetic_field, 
+                                                axis)))
+                        current_object.rotate(6.283/100, axis)
+                elif(isinstance(current_object, sp.Spinner)):
+                        res = 0
+                        for coil in current_object.coils:
+                                res += abs(calc_torque(coil,
+                                                       magnetic_field, 
+                                                       axis))
+                        current_object.rotate(6.283/100, axis)
+                        torques.append(res)
 
         fig = plt.figure()
         plt.xlabel("angle (rad)")
@@ -129,7 +138,7 @@ def simulate_movement(spinners: list,
                       sim_currents: list, 
                       delta_time: float,
                       save_video: bool = False,
-                      project_path: str = '') -> None:
+                      project_path: str = ''):
         """! Generate video frames and graphs from a current list of values in time
         
         @param spiners list of the spinner objects in the simulation
@@ -172,6 +181,11 @@ def simulate_movement(spinners: list,
         theta = []
         delta_theta = []
 
+        theta_vect = []
+        w_vect = []
+        a_vect = []
+        torque_vect = []
+
         percent = 0
 
         for i in range(len(sim_currents[0][0])):
@@ -189,6 +203,11 @@ def simulate_movement(spinners: list,
                         theta.append(0)
                         delta_theta.append(0)
 
+                        torque_vect.append([])
+                        a_vect.append([])
+                        w_vect.append([])
+                        theta_vect.append([])
+
                 
                 for j in range(len(spinners)):
                         # In the spinner j
@@ -203,6 +222,7 @@ def simulate_movement(spinners: list,
 
                         # Get torque in the rotation axis
                         torque[j] = temp.dot(spinners[j].axis.Ve)
+                        torque_vect[j].append(torque[j])
 
                         # Calculate torque loss 
                         if(Friction_Calc == NO_FRIC):
@@ -224,14 +244,17 @@ def simulate_movement(spinners: list,
 
                         # Calculate acceleration
                         a[j] = (torque[j] - loss)/inertia_moment
+                        a_vect[j].append(a[j])
 
                         # Calculate angular velocity
                         delta_w[j] = a[j] * delta_time
                         w[j] += delta_w[j]
+                        w_vect[j].append(w[j])
 
                         # Calculate theta
                         delta_theta[j] = w[j] * delta_time
                         theta[j] += delta_theta[j]
+                        theta_vect[j].append(theta[j])
 
                         # Rotate
                         spinners[j].rotate(delta_theta[j])
@@ -267,4 +290,6 @@ def simulate_movement(spinners: list,
                         video.write(img)
 
                 video.release()
+
+        return theta_vect, w_vect, a_vect, torque_vect
 
