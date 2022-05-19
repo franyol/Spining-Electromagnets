@@ -1,3 +1,6 @@
+from operator import index
+
+from click import command
 import modules.spining_electromagnets as sp
 import modules.spining_simulator as ss
 
@@ -459,8 +462,6 @@ class Simulation(tk.Tk):
                                                 *spinners_names))
             self.spin_menu[i].place(x=80, y=85+40*i, width= 100)
 
-        tk.Button(self, text="τ vs θ").place(x=690, y=115)
-
         tk.Button(self, text="Start").place(x=710, y=45)
 
 
@@ -471,6 +472,7 @@ class Simulation(tk.Tk):
         self.sim_frame.place(x=250, y=80)
 
         tk.Label(self, text="**Simulation setings**").place(x=268, y=90)
+        self.simtime_var = "0.1"
         tk.Label(self,
                  text= "sim time:").place(x=270,y=120)
         self.simtime = tk.Entry(self, width=8)
@@ -478,6 +480,7 @@ class Simulation(tk.Tk):
         tk.Label(self,
                  text= "seconds").place(x=350,y=140)
         self.simtime.place(x=270,y=140)
+        self.step_var = "0.0005"
         tk.Label(self,
                  text= "time step:").place(x=270,y=160)
         self.step = tk.Entry(self, width=8)
@@ -485,6 +488,29 @@ class Simulation(tk.Tk):
         tk.Label(self,
                  text= "seconds").place(x=350,y=180)
         self.step.place(x=270,y=180)
+
+        self.video_var = tk.IntVar(self)
+        self.csv_var = tk.IntVar(self)
+
+        self.video_check = tk.Checkbutton(self,
+                                          text="Video",
+                                          variable=self.video_var,
+                                          onvalue=1,
+                                          offvalue=0)
+        self.video_check.place(x=700,y=90)
+        self.csv_check = tk.Checkbutton(self,
+                                        text="CSV",
+                                        variable=self.csv_var,
+                                        onvalue=1,
+                                        offvalue=0)
+        self.csv_check.place(x=700,y=110)
+
+        self.bfield_var = "0.0, 0.0, 0.007"
+        tk.Label(self,
+                 text= "B field: (x, y, z) T").place(x=470,y=120)
+        self.bfield = tk.Entry(self, width=12)
+        self.bfield.insert(0, "0.0, 0.0, 0.007")
+        self.bfield.place(x=470,y=140)
 
         ############################################################
 
@@ -497,7 +523,8 @@ class Simulation(tk.Tk):
         self.coil_sel_var = tk.StringVar(self)
         self.coil_sel_menu = tk.OptionMenu(self,
                                    self.coil_sel_var,
-                                   *coils_names)
+                                   *coils_names,
+                                   command=self.change_coil)
         self.coil_sel_menu.place(x=360, y=315, width= 100)
         self.coil_sel_var.set("None")
 
@@ -522,6 +549,24 @@ class Simulation(tk.Tk):
         tk.Label(self,
                  text= "A").place(x=350,y=430)
         self.amp.place(x=270,y=430)
+        tk.Label(self, 
+                 text= "Duty cycle:").place(x=268,y=450)
+        self.duty = tk.Entry(self, width=8)
+        self.duty.insert(0, "50")
+        tk.Label(self,
+                 text= "%").place(x=350,y=470)
+        self.duty.place(x=270,y=470)
+
+        self.sine_var = tk.IntVar(self)
+
+        self.sine_check = tk.Checkbutton(self,
+                                          text="Sine wave",
+                                          variable=self.sine_var,
+                                          onvalue=1,
+                                          offvalue=0)
+        self.sine_check.place(x=270,y=500)
+
+        tk.Button(self, text="Save", command=self.savecoil).place(x=400, y=500)
         
         ############################################################
 
@@ -533,15 +578,42 @@ class Simulation(tk.Tk):
         self.spinner_sel_var = tk.StringVar(self)
         self.spinner_sel_menu = tk.OptionMenu(self,
                                    self.spinner_sel_var,
-                                   *spinners_names)
+                                   *spinners_names,
+                                   command=self.change_spinner)
         self.spinner_sel_menu.place(x=650, y=315, width= 100)
         self.spinner_sel_var.set("None")
 
-        tk.Button(self, text="Add new", command=self.add_spinner).place(x=650, y=350)
-        tk.Button(self, text="Del last", command=self.del_spinner).place(x=650, y=380)
+        self.axpos_save = []
+        tk.Label(self, 
+                 text= "Axis position: (x, y, z)").place(x=545,y=410)
+        self.axpos = tk.Entry(self, width=12)
+        self.axpos.insert(0, "0.0, 0.0, 0.0")
+        self.axpos.place(x=550,y=430)
+        self.axdir_save = []
+        tk.Label(self,
+                 text= "Axis direction: (x, y, z)").place(x=545,y=450)
+        self.axdir = tk.Entry(self, width=12)
+        self.axdir.insert(0, "0.0, 0.0, 1.0")
+        self.axdir.place(x=550,y=470)
+
+        tk.Button(self, text="Add new", command=self.add_spinner).place(x=550, y=320)
+        tk.Button(self, text="Del last", command=self.del_spinner).place(x=550, y=350)
+        tk.Button(self, text="τ vs θ").place(x=680, y=500)
+        tk.Button(self, text="Save", command=self.savespin).place(x=600, y=500)
         ############################################################
 
-        
+        self.frec_save = []
+        self.start_save = []
+        self.amp_save = []
+        self.duty_save = []
+        self.sine_save = []
+        for _ in coils:
+            self.frec_save.append(self.frec.get())
+            self.start_save.append(self.start.get())
+            self.amp_save.append(self.amp.get())
+            self.duty_save.append(self.duty.get())
+            self.sine_save.append(self.sine_var.get())
+
 
     
     def open_sim(self):
@@ -624,7 +696,8 @@ class Simulation(tk.Tk):
         self.spinner_sel_menu.destroy()
         self.spinner_sel_menu = tk.OptionMenu(self,
                                    self.spinner_sel_var,
-                                   *spinners_names)
+                                   *spinners_names,
+                                   command=self.change_spinner)
         self.spinner_sel_menu.place(x=650, y=315, width= 100)
         self.spinner_sel_var.set(spinners_names[len(spinners_names)-1])
 
@@ -638,7 +711,9 @@ class Simulation(tk.Tk):
                                                     self.spin_var[i],
                                                     *spinners_names))
             self.spin_menu[i].place(x=80, y=85+40*i, width= 100)
-        
+
+        self.axpos_save.append("0.0, 0.0, 0.0")
+        self.axdir_save.append("0.0, 0.0, 1.0")   
 
     def del_spinner(self):
 
@@ -658,7 +733,8 @@ class Simulation(tk.Tk):
                     self.spin_var[i].set("None")
                 self.spin_menu.append(tk.OptionMenu(self,
                                                     self.spin_var[i],
-                                                    *spinners_names))
+                                                    *spinners_names,
+                                                    command=self.change_spinner))
                 self.spin_menu[i].place(x=80, y=85+40*i, width= 100)
                 
 
@@ -669,10 +745,57 @@ class Simulation(tk.Tk):
                                     self.spinner_sel_var,
                                     *spinners_names)
             self.spinner_sel_menu.place(x=650, y=315, width= 100)
-            
 
+            self.axpos_save.pop()
+            self.axdir_save.pop()   
             
+    def savecoil(self):
 
+        global coils, coils_names
+
+        indx = coils_names.index(self.coil_sel_var.get())
+
+        self.frec_save[indx] = self.frec.get()
+        self.start_save[indx] = self.start.get()
+        self.amp_save[indx] = self.amp.get()
+        self.duty_save[indx] = self.duty.get()
+        self.sine_save[indx] = self.sine_var.get()
+
+    def savespin(self):
+        
+        global spinners, spinners_names
+
+        indx = spinners_names.index(self.spinner_sel_var.get())
+
+        self.axpos_save[indx-1] = self.axpos.get()
+        self.axdir_save[indx-1] = self.axdir.get()
+            
+    def change_coil(self, coil):
+
+        global coils, coils_names
+
+        indx = coils_names.index(coil)
+
+        self.frec.delete(0, 'end')
+        self.frec.insert(0, self.frec_save[indx])
+        self.start.delete(0, 'end')
+        self.start.insert(0, self.start_save[indx])
+        self.amp.delete(0, 'end')
+        self.amp.insert(0, self.amp_save[indx])
+        self.duty.delete(0, 'end')
+        self.duty.insert(0, self.duty_save[indx])
+        self.sine_var.set(self.sine_save[indx])
+
+    def change_spinner(self, spinner):
+
+        global spinners, spinners_names
+
+        indx = spinners_names.index(spinner)
+
+        self.axpos.delete(0, 'end')
+        self.axpos.insert(0, self.axpos_save[indx-1])
+        self.axdir.delete(0, 'end')
+        self.axdir.insert(0, self.axdir_save[indx-1])
 
 
 def open_designer():
