@@ -18,7 +18,12 @@ If you are reading this you may need a tool for simulating the rotation of small
 6. [The physics behind this project](#the-physics-behind-this-project)
 
 ## Requirements
-Some text.
+Make sure you have these dependencies latest versions installed:
+
+- [Pillow](https://pillow.readthedocs.io/en/stable/installation.html)
+- [opencv](https://pypi.org/project/opencv-python/)
+- [tkinter](https://www.tutorialspoint.com/how-to-install-tkinter-in-python)
+- [matplotlib](https://matplotlib.org/stable/users/installing/index.html)
 ## Creating our first project
 Some text
 ## Designer interface
