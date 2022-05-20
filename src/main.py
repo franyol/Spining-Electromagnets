@@ -5,6 +5,7 @@ import modules.spining_electromagnets as sp
 import modules.spining_simulator as ss
 
 import os
+import math
 
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
@@ -145,8 +146,6 @@ class Designer(tk.Tk):
         self.angle = tk.Entry(self, width=8)
         self.angle.insert(0, "1.57")
         self.angle.place(x=650,y=420)
-
-
 
 
     def open_project(self):
@@ -347,8 +346,8 @@ class Designer(tk.Tk):
         plt.savefig(projectpath + "/cache/img.png")
 
         self.img_scaled = resize_image(cv.imread(projectpath + "/cache/img.png"))
-        cv.imwrite('resized_image.png', self.img_scaled) 
-        self.img = Image.open('resized_image.png')
+        cv.imwrite(projectpath + '/cache/resized_image.png', self.img_scaled) 
+        self.img = Image.open(projectpath + '/cache/resized_image.png')
         self.img = ImageTk.PhotoImage(self.img)
 
         self.editor_img = ttk.Label(self, image=self.img)
@@ -462,8 +461,7 @@ class Simulation(tk.Tk):
                                                 *spinners_names))
             self.spin_menu[i].place(x=80, y=85+40*i, width= 100)
 
-        tk.Button(self, text="Start").place(x=710, y=45)
-
+        tk.Button(self, text="Start", command=self.simulate).place(x=710, y=45)
 
         ############################################################
 
@@ -472,19 +470,17 @@ class Simulation(tk.Tk):
         self.sim_frame.place(x=250, y=80)
 
         tk.Label(self, text="**Simulation setings**").place(x=268, y=90)
-        self.simtime_var = "0.1"
         tk.Label(self,
                  text= "sim time:").place(x=270,y=120)
         self.simtime = tk.Entry(self, width=8)
-        self.simtime.insert(0, "0.1")
+        self.simtime.insert(0, "10")
         tk.Label(self,
                  text= "seconds").place(x=350,y=140)
         self.simtime.place(x=270,y=140)
-        self.step_var = "0.0005"
         tk.Label(self,
                  text= "time step:").place(x=270,y=160)
         self.step = tk.Entry(self, width=8)
-        self.step.insert(0, "0.0005")
+        self.step.insert(0, "0.05")
         tk.Label(self,
                  text= "seconds").place(x=350,y=180)
         self.step.place(x=270,y=180)
@@ -505,11 +501,10 @@ class Simulation(tk.Tk):
                                         offvalue=0)
         self.csv_check.place(x=700,y=110)
 
-        self.bfield_var = "0.0, 0.0, 0.007"
         tk.Label(self,
                  text= "B field: (x, y, z) T").place(x=470,y=120)
-        self.bfield = tk.Entry(self, width=12)
-        self.bfield.insert(0, "0.0, 0.0, 0.007")
+        self.bfield = tk.Entry(self, width=16)
+        self.bfield.insert(0, "0.07, 0.0, 0.0")
         self.bfield.place(x=470,y=140)
 
         ############################################################
@@ -531,7 +526,7 @@ class Simulation(tk.Tk):
         tk.Label(self, 
                  text= "frec:").place(x=268,y=330)
         self.frec = tk.Entry(self, width=8)
-        self.frec.insert(0, "50")
+        self.frec.insert(0, "0.5")
         tk.Label(self,
                  text= "Hz").place(x=350,y=350)
         self.frec.place(x=270,y=350)
@@ -545,14 +540,14 @@ class Simulation(tk.Tk):
         tk.Label(self, 
                  text= "Amplitude:").place(x=268,y=410)
         self.amp = tk.Entry(self, width=8)
-        self.amp.insert(0, "50")
+        self.amp.insert(0, "0.1")
         tk.Label(self,
                  text= "A").place(x=350,y=430)
         self.amp.place(x=270,y=430)
         tk.Label(self, 
                  text= "Duty cycle:").place(x=268,y=450)
         self.duty = tk.Entry(self, width=8)
-        self.duty.insert(0, "50")
+        self.duty.insert(0, "100")
         tk.Label(self,
                  text= "%").place(x=350,y=470)
         self.duty.place(x=270,y=470)
@@ -586,19 +581,19 @@ class Simulation(tk.Tk):
         self.axpos_save = []
         tk.Label(self, 
                  text= "Axis position: (x, y, z)").place(x=545,y=410)
-        self.axpos = tk.Entry(self, width=12)
+        self.axpos = tk.Entry(self, width=16)
         self.axpos.insert(0, "0.0, 0.0, 0.0")
         self.axpos.place(x=550,y=430)
         self.axdir_save = []
         tk.Label(self,
                  text= "Axis direction: (x, y, z)").place(x=545,y=450)
-        self.axdir = tk.Entry(self, width=12)
+        self.axdir = tk.Entry(self, width=16)
         self.axdir.insert(0, "0.0, 0.0, 1.0")
         self.axdir.place(x=550,y=470)
 
         tk.Button(self, text="Add new", command=self.add_spinner).place(x=550, y=320)
         tk.Button(self, text="Del last", command=self.del_spinner).place(x=550, y=350)
-        tk.Button(self, text="τ vs θ").place(x=680, y=500)
+        tk.Button(self, text="τ vs θ", command=self.torquetheta).place(x=680, y=500)
         tk.Button(self, text="Save", command=self.savespin).place(x=600, y=500)
         ############################################################
 
@@ -613,7 +608,6 @@ class Simulation(tk.Tk):
             self.amp_save.append(self.amp.get())
             self.duty_save.append(self.duty.get())
             self.sine_save.append(self.sine_var.get())
-
 
     
     def open_sim(self):
@@ -796,6 +790,172 @@ class Simulation(tk.Tk):
         self.axpos.insert(0, self.axpos_save[indx-1])
         self.axdir.delete(0, 'end')
         self.axdir.insert(0, self.axdir_save[indx-1])
+
+    def torquetheta(self):
+
+        global spinners, spinners_names, coils, coils_names
+
+        selected = self.spinner_sel_var.get()
+        coilist = []
+
+        for i in range(len(coils_names)):
+
+            if self.spin_var[i].get() == selected:
+                set_coil = coils[i]
+                set_coil.set_current(float(self.amp.get()))
+                coilist.append(set_coil)
+        
+        Astr = self.axpos.get()
+        Astrv = Astr.split(", ")
+        Vstr = self.axdir.get()
+        Vstrv = Vstr.split(", ")
+
+        Ae = sp.Vector(float(Astrv[0]), float(Astrv[1]), float(Astrv[2]))
+        Ve = sp.Vector(float(Vstrv[0]), float(Vstrv[1]), float(Vstrv[2]))
+
+        axis = sp.RotationAxis(Ae, Ve)
+
+        Bstr = self.bfield.get()
+        Bstrv = Bstr.split(", ")
+
+        bfield = sp.Vector(float(Bstrv[0]), float(Bstrv[1]), float(Bstrv[2]))
+
+        new_spinner = sp.Spinner(coilist, axis)
+
+        ss.plot_torque_vs_angle(new_spinner, bfield, axis)
+
+    def simulate(self):
+
+        global coils, coils_names, spinners, spinners_names, simpath
+
+        spinners = []
+        coilist = []
+
+        for i in range(len(spinners_names)-1):
+            coilist.append([])
+
+        for i in range(len(coils_names)):
+
+            spinnerstr = self.spin_var[i].get()
+            indx = spinners_names.index(spinnerstr)
+
+            coilist[indx-1].append(coils[i])
+
+        for i in range(len(spinners_names)-1):
+
+            Astr = self.axpos_save[i]
+            Astrv = Astr.split(", ")
+            Vstr = self.axdir_save[i]
+            Vstrv = Vstr.split(", ")
+
+            Ae = sp.Vector(float(Astrv[0]), float(Astrv[1]), float(Astrv[2]))
+            Ve = sp.Vector(float(Vstrv[0]), float(Vstrv[1]), float(Vstrv[2]))
+
+            axis = sp.RotationAxis(Ae, Ve)
+
+            spinners.append(sp.Spinner(coilist[i], axis))
+
+        # Get magnetic field
+        Bstr = self.bfield.get()
+        Bstrv = Bstr.split(", ")
+        bfield = sp.Vector(float(Bstrv[0]), float(Bstrv[1]), float(Bstrv[2]))
+
+        delta = float(self.step.get())
+        total = float(self.simtime.get())
+
+        sim_currents = []
+
+        # Currents
+        for i in range(len(spinners)):
+            sim_currents.append([])
+            for j in range(len(spinners[i].coils)):
+                sim_currents[i].append([])
+
+                # Find the respective index in coils
+                indx = coils.index(spinners[i].coils[j])
+
+                frec = float(self.frec_save[indx])
+                amp = float(self.amp_save[indx])
+                duty = int(self.duty_save[indx])
+                start = float(self.start_save[indx])
+
+                duty_mul = 1
+                t_periodic = 0
+                duty_time = duty/(frec*100)
+                
+                for t in np.arange(0, total, delta):
+                    
+                    t_periodic += delta
+                    if t_periodic > duty_time:
+                        duty_mul = 0
+                    else:
+                        duty_mul = 1
+                    if t_periodic >= 1/frec:
+                        t_periodic = 0
+                    
+                    if self.sine_save[indx] == 1:
+                        i_c = math.sin((t - start)*2*math.pi*frec) * amp * duty_mul
+                    else:
+                        i_c = amp
+
+                    if t < start:
+                        i_c = 0
+                        
+                    sim_currents[i][j].append(i_c)
+
+        save = False
+        if self.video_var.get() == 1:
+            save = True
+
+        tvect = list(np.arange(0, total, delta))
+
+        theta, w, a, torque = ss.simulate_movement(spinners, bfield, sim_currents, delta, save, simpath)
+        
+        fig = []
+        ifig = []
+        ix = []
+
+        for i in range(len(spinners)):
+
+            fig.append(0)
+            fig[i], (ax1, ax2, ax3, ax4) = plt.subplots(4)
+            fig[i].suptitle('spinner ' + str(i))
+            ax1.plot(tvect, theta[i])
+            ax1.set(ylabel='θ (Rad)')
+            ax2.plot(tvect, w[i])
+            ax2.set(ylabel='w (Rad/sec)')
+            ax3.plot(tvect, a[i])
+            ax3.set(ylabel='a (Rad/sec²)')
+            ax4.plot(tvect, torque[i])
+            ax4.set(ylabel='τ (Nm)', xlabel='t (sec)')
+
+            ifig.append(0)
+            ix.append([])
+
+            if len(sim_currents[i]) > 1:
+                for _ in range(len(sim_currents[i])):
+                    ix[i].append(0)
+                
+                ix[i] = tuple(ix[i])
+                
+                ifig[i], ix[i] = plt.subplots(len(sim_currents[i]))
+                ifig[i].suptitle('spinner ' + str(i) + " coils")
+                
+                for j in range(len(sim_currents[i])):
+                    ix[i][j].plot(tvect, sim_currents[i][j])
+                    ix[i][j].set(ylabel='I (A) ' + str(j))
+
+            else:
+                ofig = plt.figure()
+                plt.plot(tvect, sim_currents[i][0])
+                plt.title('spinner ' + str(i) + " coil")
+                plt.ylabel("I (A)")
+            
+
+        plt.show()
+        
+
+
 
 
 def open_designer():

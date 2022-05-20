@@ -120,7 +120,8 @@ def plot_torque_vs_angle(current_object,
                                 res += abs(calc_torque(coil,
                                                        magnetic_field, 
                                                        axis))
-                        current_object.rotate(6.283/100, axis)
+                        current_object.axis = axis
+                        current_object.rotate(6.283/100)
                         torques.append(res)
 
         fig = plt.figure()
@@ -280,7 +281,7 @@ def simulate_movement(spinners: list,
 
                 # Save graphs
                 # Save video
-                first_frame = cv.imread("/frames/frame0.png")
+                first_frame = cv.imread(project_path + "/frames/frame0.png")
                 height, width, _ = first_frame.shape
 
                 fourcc = cv.VideoWriter_fourcc('m', 'p', '4', 'v')
