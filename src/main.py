@@ -1,6 +1,5 @@
 from operator import index
 
-from click import command
 import modules.spining_electromagnets as sp
 import modules.spining_simulator as ss
 
